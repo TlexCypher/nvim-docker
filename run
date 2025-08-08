@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+OS="$1"
+
+if [[ ${OS} != "arch" && ${OS} != "ubuntu" ]]; then
+    echo "Usage: ./run <arch|ubuntu>"
+    exit 1
+fi
+
+echo "Building Docker image for ${OS}..."
+docker image build -t "${OS}-nvim" -f "Dockerfile.${OS}" .
+
+echo "Running Docker container for ${OS}..."
+docker container run -itd --rm --name "${OS}-nvim" "${OS}-nvim"
+docker container exec -it "${OS}-nvim" bash

@@ -1,0 +1,41 @@
+# Build stage
+FROM --platform=linux/amd64 ubuntu:latest as builder
+
+# NOTE: Package Manager
+# We use apt as a package manager for Ubuntu, Debian. apt is released later than apt-get, also the dependency resolving algorithm is better than apt-get.
+# Resource: https://aws.amazon.com/jp/compare/the-difference-between-apt-and-apt-get/
+RUN apt update && apt install -y sudo git build-essential autoconf automake cmake pkg-config unzip curl doxygen wget ripgrep tmux fzf which make  libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev
+
+# NOTE: Neovim
+# Get the latest neovim release and install it, then get my config from remote repository.
+RUN wget https://github.com/neovim/neovim/releases/download/v0.11.3/nvim-linux-x86_64.tar.gz
+RUN tar -zxvf nvim-linux-x86_64.tar.gz && \
+    mv nvim-linux-x86_64/bin/nvim /usr/bin/nvim && \
+    mv nvim-linux-x86_64/lib/nvim /usr/lib/nvim && \
+    mv nvim-linux-x86_64/share/nvim/ /usr/share/nvim && \
+    rm -rf nvim-linux-x86_64 && \
+    rm nvim-linux-x86_64.tar.gz
+
+RUN git clone --branch nvim-docker https://github.com/TlexCypher/init.lua.git ~/.config/nvim
+
+
+# NOTE: Languange and Runtime
+# We use asdf to manage multiple versions of Go, Node.js, Python
+# RUN git clone https://github.com/asdf-vm/asdf.git --branch v0.18.0&& cd asdf && make && cd
+# At first, to build asdf, we need Go runtime.
+RUN wget https://go.dev/dl/go1.24.6.linux-amd64.tar.gz && rm -rf /usr/local/go && tar -C /usr/local -xzf go1.24.6.linux-amd64.tar.gz
+
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+RUN git clone https://github.com/asdf-vm/asdf.git --branch v0.18.0 && cd asdf && make && cd .. && cp asdf/asdf /usr/local/bin
+
+RUN asdf plugin add golang && asdf install golang latest && asdf set -u golang latest
+RUN asdf plugin add nodejs && asdf install nodejs latest && asdf set -u nodejs latest 
+RUN asdf plugin add python && asdf install python latest && asdf set -u python latest 
+
+
+ENV PATH="/root/.asdf/shims:/root/.asdf/bin:${PATH}"
+
+WORKDIR /root
+
+CMD ["bash"]

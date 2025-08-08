@@ -27,16 +27,20 @@ FROM --platform=linux/amd64 archlinux:latest
 
 COPY --from=builder /usr/bin/yay /usr/bin/yay
 
-RUN pacman -Syu --noconfirm curl git tmux neovim cmake fzf which unzip base-devel go npm nodejs python sudo
+RUN pacman -Syu --noconfirm curl git tmux neovim cmake fzf which unzip base-devel go npm sudo ripgrep nodejs python
 
-RUN useradd -m -G wheel appuser
-
-RUN echo "appuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
-USER appuser
 RUN git clone --branch nvim-docker https://github.com/TlexCypher/init.lua.git ~/.config/nvim
-RUN yay -S python314 --noconfirm
 
-WORKDIR /home/appuser
+RUN git clone https://github.com/asdf-vm/asdf.git --branch v0.18.0 && cd asdf && make && cd .. && cp asdf/asdf /usr/sbin
+
+RUN asdf plugin add golang && asdf install golang latest && asdf set -u golang latest
+
+RUN asdf plugin add nodejs && asdf install nodejs latest && asdf set -u nodejs latest 
+
+RUN asdf plugin add python && asdf install python latest && asdf set -u python latest 
+
+ENV PATH="/root/.asdf/shims:/root/.asdf/bin:${PATH}"
+
+WORKDIR /root
 
 CMD ["bash"]
